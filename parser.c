@@ -5,7 +5,14 @@
 #include "parser.h"
 
 Token* current_token;
+ASTNode* parseBinaryExp(FILE* source, int precedence_level);
+ASTNode* parsePrimaryExp(FILE* source);
 
+int getprecedence(const char *op){
+    if(!strcmp(op,"+") || !strcmp(op,"-")) return 1;
+    if(!strcmp(op,"*") || !strcmp(op,"/")) return 2;
+    return 0;
+}
 void advanceToken(FILE* source){
     if (current_token) {
         free(current_token->value);
@@ -41,7 +48,17 @@ ASTNode* createBinaryExptNode(char *op,ASTNode* left, ASTNode* right){
 }
 
 ASTNode* parsePrimaryExp(FILE* source){
-    if(current_token->type== TOKEN_IDENTIFIER){
+    if(current_token->type == TOKEN_LEFT_PAREN){
+        advanceToken(source);
+        ASTNode* node = parseBinaryExp(source,0);
+        if(current_token->type== TOKEN_RIGHT_PAREN)
+            advanceToken(source);
+        else{
+            printf("Syntax error right ) is missing");
+        }
+        return node;
+    }
+   else if(current_token->type== TOKEN_IDENTIFIER){
         ASTNode* node = createidnode(current_token->value);
         advanceToken(source);
         return node;
@@ -51,13 +68,16 @@ ASTNode* parsePrimaryExp(FILE* source){
         return node;
     }
 }
-ASTNode* parseBinaryExp(FILE* source){
+ASTNode* parseBinaryExp(FILE* source,int pre_level){
     ASTNode* left = parsePrimaryExp(source);
-    while((current_token->type == TOKEN_OPERATOR && strcmp(current_token->value,"+")==0 )|| strcmp(current_token->value,"-")==0){
-        char op[2]={ current_token->value[0],'\0'};
+    while((current_token->type == TOKEN_OPERATOR && getprecedence(current_token->value)>=pre_level)){
+        char *op= strdup(current_token->value);
+        int op_pre=getprecedence(op);
         advanceToken(source);
-        ASTNode* right =parsePrimaryExp(source);
+
+        ASTNode* right =parseBinaryExp(source,op_pre+1);
         left=createBinaryExptNode(op,left,right);
+        free(op);
     }
     return left;
 }
@@ -68,7 +88,7 @@ ASTNode* parseAssignment(FILE* source){
 
         if(current_token->type==TOKEN_OPERATOR && strcmp(current_token->value,"=")==0){
             advanceToken(source);
-            ASTNode* expr = parseBinaryExp(source);
+            ASTNode* expr = parseBinaryExp(source,0);
             ASTNode* assignment = malloc(sizeof(ASTNode));
             assignment->type = AST_ASSIGNMENT;
             assignment->left = id;
@@ -95,13 +115,13 @@ void printAST(ASTNode* node) {
 
     switch (node->type) {
         case AST_ASSIGNMENT:
-            printf("Assignment: %s = ", node->left->value); // Print the identifier
+            printf("Assignment: %s = \n", node->left->value); // Print the identifier
             printAST(node->right); // Print the expression
             break;
         case AST_BINARYEXP:
-            printf("Binary Expression: ");
+            //printf("Binary Expression: ");
             printAST(node->left); // Print the left operand
-            printf(" Operator: %s ", node->value); // Print the operator
+            printf(" Operator: %s\n ", node->value); // Print the operator
             printAST(node->right); // Print the right operand
             break;
         case AST_IDENTIFIER:
@@ -128,7 +148,7 @@ void parse_it(FILE* source){
         else{
             printf("NOT Parsed");
         }
-                    advanceToken(source);
+        advanceToken(source);
 
     }
 }

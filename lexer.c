@@ -93,8 +93,8 @@ Token* getNextToken(FILE* source){
     }
     //for identifying punctuators and operators
     switch(c){
-        case '(': return createToken(TOKEN_PUNCTUATOR,"(",line); 
-        case ')': return createToken(TOKEN_PUNCTUATOR,")",line); 
+        case '(': return createToken(TOKEN_LEFT_PAREN,"(",line); 
+        case ')': return createToken(TOKEN_RIGHT_PAREN,")",line); 
         case '{': return createToken(TOKEN_PUNCTUATOR,"{",line); 
         case '}': return createToken(TOKEN_PUNCTUATOR,"}",line); 
         case ';': return createToken(TOKEN_PUNCTUATOR,";",line); 
